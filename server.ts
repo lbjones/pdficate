@@ -1,8 +1,8 @@
+import axios from "axios";
 import express from "express";
-import puppeteer from "puppeteer";
-
 import fs from "fs";
 import path from "path";
+import puppeteer from "puppeteer";
 
 const app = express();
 const port = 8087;
@@ -23,66 +23,86 @@ app.use(function (req, res, next) {
 });
 
 app.get("/", (req, res) => {
-  console.log("home request");
-  res.send("hello sir");
+  res.send("");
 });
 
-app.post("/initiate-sync", (req, res) => {
-  console.dir(req.body, { depth: 1 });
+interface PrintNode {
+  path: string;
+  updatedAt: string;
+}
+
+app.get("/initiate-sync", (req, res) => {
+  // console.dir(req.body, { depth: null });
+
+  if (!req?.body?.context) return res.sendStatus(200);
+
+  let host = req.body.url;
+  if (req.body.context === "deploy-preview") host = req.body.deploy_ssl_url;
+
+  console.log("response");
+  axios.get(`${host}/print-file-list.json`).then(async (response) => {
+    // console.log(response);
+    const browser = await puppeteer.launch();
+    for (const node of response.data) {
+      const filename = `./files${node.path.slice(0, -1)}.pdf`;
+      if (node.path !== "/help///") {
+        console.log(node.path);
+        if (
+          !fs.existsSync(filename) ||
+          fs.statSync(filename).birthtime < new Date(node.updatedAt)
+        ) {
+          console.log("get", `${host}${node.path}print/`);
+          const html = await axios
+            .get(`${host}${node.path}print/`)
+            .then((response) => response.data);
+          // console.log(html);
+          const page = await browser.newPage();
+          await page.setContent(html);
+          const dir = filename.substring(0, filename.lastIndexOf("/"));
+          if (!fs.existsSync(dir)) {
+            console.log(`dir ${dir} doesnt exist, creating it...`);
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          await page.pdf({
+            format: "letter",
+            path: filename,
+            margin: {
+              top: "32px",
+              right: "32px",
+              bottom: "32px",
+              left: "32px",
+            },
+            scale: 1,
+          });
+        } else {
+          console.log(
+            `pdf for ${filename}, file created ${
+              fs.statSync(filename).birthtime
+            } last updated ${new Date(node.updatedAt)}`
+          );
+        }
+      }
+    }
+    await browser.close();
+  });
+
   res.sendStatus(200);
 });
 
 app.get("/get-pdf", async (req, res) => {
-  console.dir(req, { depth: null });
+  console.log(JSON.stringify(req.headers));
+  const referrer = req.get("referrer") || "";
+  console.log("referrer", referrer);
+  const path = new URL(referrer).pathname;
+  console.log("path", path.trimEnd);
 
-  //  if (
-  //    process.env.NODE_ENV === "production" &&
-  //    req.get("origin") !== "https://bitwarden.com"
-  //  )
-  //    return res.status(401).send("Unauthorized");
-
-  //  console.log("haaaa");
-
-  // console.dir(req, { depth: null });
-  console.log("starting", req.body.updatedAt);
-  console.log("origin", req.get("origin"));
-
-  const cacheFile = `./cache${req.body.path}${req.body.updatedAt}.pdf`;
+  const cacheFile = `./files${path.slice(0, -1)}.pdf`;
   console.log(cacheFile);
   if (fs.existsSync(cacheFile)) {
     res.contentType("application/pdf");
     res.send(fs.readFileSync(cacheFile));
     return;
   }
-  //fs.writeFile(
 
-  //  const printUrl = `${req.get("origin")}${req.body.path}print/`;
-  //  console.log(printUrl);
-  //  const print = await axios.get(printUrl);
-
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  //  console.dir(print.data, { depth: null });
-
-  // 1. Create PDF from URL
-  await page.setContent(req?.body?.html);
-  const pdf = await page.pdf({
-    format: "letter",
-    margin: { top: "32px", right: "32px", bottom: "32px", left: "32px" },
-    scale: 1,
-  });
-
-  // 2. Create PDF from static HTML
-
-  await browser.close();
-
-  fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
-  fs.writeFileSync(cacheFile, pdf);
-
-  console.log("end");
-  //  var endTime = performance.now();
-  //  console.log(`Call to doSomething took ${endTime - startTime} milliseconds`);
-
-  res.contentType("application/pdf");
-  res.send(pdf);
+  res.sendStatus(404);
 });
