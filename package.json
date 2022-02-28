@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "scripts": {
     "dev": "ts-node-dev ./server.ts",
     "serve": "ts-node ./server.ts"

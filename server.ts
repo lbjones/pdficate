@@ -1,7 +1,6 @@
 import axios from "axios";
 import express from "express";
 import fs from "fs";
-import path from "path";
 import puppeteer from "puppeteer";
 
 const app = express();
