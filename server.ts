@@ -93,10 +93,9 @@ app.get("/get-pdf", async (req, res) => {
   console.log("get path", path);
   if (!path || typeof path !== "string") return res.sendStatus(404);
 
-  const cacheFile = `./files${path.slice(0, -1)}.pdf`;
-  console.log(cacheFile);
-  if (!fs.existsSync(cacheFile)) return res.sendStatus(404);
+  const file = `./files${path.slice(0, -1)}.pdf`;
+  console.log(file);
+  if (!fs.existsSync(file)) return res.sendStatus(404);
 
-  res.contentType("application/pdf");
-  res.send(fs.readFileSync(cacheFile));
+  return res.download(file);
 });
