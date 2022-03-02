@@ -30,7 +30,7 @@ interface PrintNode {
   updatedAt: string;
 }
 
-app.get("/initiate-sync", (req, res) => {
+app.post("/initiate-sync", (req, res) => {
   // console.dir(req.body, { depth: null });
 
   if (!req?.body?.context) return res.sendStatus(200);
@@ -38,7 +38,7 @@ app.get("/initiate-sync", (req, res) => {
   let host = req.body.url;
   if (req.body.context === "deploy-preview") host = req.body.deploy_ssl_url;
 
-  console.log("response");
+  // console.log("response");
   axios.get(`${host}/print-file-list.json`).then(async (response) => {
     // console.log(response);
     const browser = await puppeteer.launch();
@@ -89,19 +89,14 @@ app.get("/initiate-sync", (req, res) => {
 });
 
 app.get("/get-pdf", async (req, res) => {
-  console.log(JSON.stringify(req.headers));
-  const referrer = req.get("referrer") || "";
-  console.log("referrer", referrer);
-  const path = new URL(referrer).pathname;
-  console.log("path", path.trimEnd);
+  const path = req.query.path;
+  console.log("get path", path);
+  if (!path || typeof path !== "string") return res.sendStatus(404);
 
   const cacheFile = `./files${path.slice(0, -1)}.pdf`;
   console.log(cacheFile);
-  if (fs.existsSync(cacheFile)) {
-    res.contentType("application/pdf");
-    res.send(fs.readFileSync(cacheFile));
-    return;
-  }
+  if (!fs.existsSync(cacheFile)) return res.sendStatus(404);
 
-  res.sendStatus(404);
+  res.contentType("application/pdf");
+  res.send(fs.readFileSync(cacheFile));
 });
