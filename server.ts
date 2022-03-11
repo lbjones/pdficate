@@ -2,9 +2,19 @@ import axios from "axios";
 import express from "express";
 import fs from "fs";
 import puppeteer from "puppeteer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const port = 8087;
+const port = process.env.PORT;
+interface PrintNode {
+  path: string;
+  updatedAt: string;
+}
+
+const PrintEnvs = ["production", "preview", "localhost"] as const;
+type PrintEnv = typeof PrintEnvs[number];
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
@@ -21,40 +31,63 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.get("/", (req, res) => {
-  res.send("");
-});
-
-interface PrintNode {
-  path: string;
-  updatedAt: string;
-}
-
 app.post("/initiate-sync", (req, res) => {
-  // console.dir(req.body, { depth: null });
+  console.dir(req.body, { depth: null });
 
   if (!req?.body?.context) return res.sendStatus(200);
 
-  let host = req.body.url;
-  if (req.body.context === "deploy-preview") host = req.body.deploy_ssl_url;
+  let host = "";
+  let env: PrintEnv;
+  if (req.body.context === "production") {
+    env = "production";
+    host = req.body.ssl_url;
+  } else if (
+    req.body.context === "deploy-preview" ||
+    req.body.context === "branch-deploy"
+  ) {
+    env = "preview";
+    host = req.body.deploy_ssl_url;
+  } else return res.sendStatus(200);
 
-  // console.log("response");
-  axios.get(`${host}/print-file-list.json`).then(async (response) => {
-    // console.log(response);
+  generatePdfs(host, env);
+
+  res.sendStatus(200);
+});
+
+app.get("/clear-cache", (req, res) => {
+  const { host, env, key } = req.query;
+
+  if (process.env.KEY !== key || !PrintEnvs.includes(env as PrintEnv) || !host)
+    return res.sendStatus(404);
+
+  console.log("clearing cache: ", host, env);
+
+  fs.rmSync(`./pdfs/${env}`, { recursive: true, force: true });
+
+  generatePdfs(host as string, env as PrintEnv);
+
+  res.sendStatus(200);
+});
+
+const generatePdfs = (host: string, env: PrintEnv) => {
+  const listingUrl = `${host}/print-file-list.json`;
+  console.log("generatePdfs: ", listingUrl);
+  axios.get(listingUrl).then(async (response) => {
     const browser = await puppeteer.launch();
     for (const node of response.data) {
-      const filename = `./files${node.path.slice(0, -1)}.pdf`;
-      if (node.path !== "/help///") {
-        console.log(node.path);
-        if (
-          !fs.existsSync(filename) ||
-          fs.statSync(filename).birthtime < new Date(node.updatedAt)
-        ) {
-          console.log("get", `${host}${node.path}print/`);
-          const html = await axios
-            .get(`${host}${node.path}print/`)
-            .then((response) => response.data);
-          // console.log(html);
+      const printNode = node as PrintNode;
+      const filename = `./pdfs/${env}${node.path.slice(0, -1)}.pdf`;
+      if (
+        !fs.existsSync(filename) ||
+        fs.statSync(filename).birthtime < new Date(printNode.updatedAt)
+      ) {
+        const printUrl = `${host}${printNode.path}print/`;
+        console.log("refreshing: ", printUrl);
+        const html = await axios
+          .get(printUrl)
+          .then((response) => response.data)
+          .catch((err) => console.error("could not retrieve that last one"));
+        if (html) {
           const page = await browser.newPage();
           await page.setContent(html);
           const dir = filename.substring(0, filename.lastIndexOf("/"));
@@ -73,29 +106,25 @@ app.post("/initiate-sync", (req, res) => {
             },
             scale: 1,
           });
-        } else {
-          console.log(
-            `pdf for ${filename}, file created ${
-              fs.statSync(filename).birthtime
-            } last updated ${new Date(node.updatedAt)}`
-          );
         }
       }
     }
     await browser.close();
   });
-
-  res.sendStatus(200);
-});
+};
 
 app.get("/get-pdf", async (req, res) => {
   const path = req.query.path;
-  console.log("get path", path);
+  console.log("getting: ", path);
   if (!path || typeof path !== "string") return res.sendStatus(404);
 
-  const file = `./files${path.slice(0, -1)}.pdf`;
-  console.log(file);
+  let env: PrintEnv = "production";
+  if (req.hostname.includes("localhost")) env = "localhost";
+  else if (req.hostname.includes("preview")) env = "preview";
+
+  const file = `./pdfs/${env}${path.slice(0, -1)}.pdf`;
   if (!fs.existsSync(file)) return res.sendStatus(404);
 
+  console.log("got: ", file);
   return res.download(file);
 });
