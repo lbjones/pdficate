@@ -120,6 +120,7 @@ const generatePdfs = (host: string, env: PrintEnv) => {
           }
         }
       }
+      console.log("...and done");
       await browser.close();
     })
     .catch(() => console.log("Error...could not retrieve listing file"));
