@@ -41,7 +41,7 @@ app.use(function (req, res, next) {
 app.post("/initiate-sync", (req, res) => {
   console.dir(req.body, { depth: null });
 
-  if (!req?.body?.context) return res.sendStatus(200);
+  if (!req?.body?.context && !req?.body?.deployPreviewUrl) return res.sendStatus(200);
 
   let host = "";
   let env: PrintEnv;
@@ -54,6 +54,9 @@ app.post("/initiate-sync", (req, res) => {
   ) {
     env = "preview";
     host = req.body.deploy_ssl_url;
+  } else if (req.body.deployPreviewUrl) {
+    env = "preview";
+    host = req.body.deployPreviewUrl;
   } else return res.sendStatus(200);
 
   generatePdfs(host, env);
@@ -128,12 +131,13 @@ const generatePdfs = (host: string, env: PrintEnv) => {
 
 app.get("/get-pdf", async (req, res) => {
   const path = req.query.path;
-  console.log(`getting: ${path}`);
+  const referrer = req.get("referrer") || '';
+  console.log(`getting: ${path} for ${referrer}`);
   if (!path || typeof path !== "string") return res.sendStatus(404);
 
   let env: PrintEnv = "production";
-  if (req.hostname.includes("localhost")) env = "localhost";
-  else if (req.hostname.includes("preview")) env = "preview";
+  if (referrer.includes("localhost")) env = "localhost";
+  else if (referrer.includes("preview")) env = "preview";
 
   const file = `./pdfs/${env}${path.slice(0, -1)}.pdf`;
   if (!fs.existsSync(file)) return res.sendStatus(404);
