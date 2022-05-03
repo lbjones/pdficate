@@ -1,0 +1,158 @@
+From `/home/forge/.forge/daemon-676259.log`
+
+# Gatsby Cloud master build
+{
+  body: '# [Gatsby Cloud](https://www.gatsbyjs.com) Build Report\n' +
+    '**bitwarden**\n' +
+    '\n' +
+    ':tada: Your build was successful! [See the Deploy preview here.](https://bitwarden.gtsb.io)\n' +
+    '\n' +
+    '## Build Details\n' +
+    '\n' +
+    '[View the build logs here.](https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/679bd6d3-60eb-41f6-91bd-546ae4c4bac
+7/details)\n' +
+    '\n' +
+    ':clock1: Build time: **16s**\n',
+  buildId: '679bd6d3-60eb-41f6-91bd-546ae4c4bac7',
+  workspaceName: 'Bitwarden',
+  siteName: 'bitwarden',
+  deployPreviewUrl: 'https://bitwarden.gtsb.io',
+  logsUrl: 'https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/679bd6d3-60eb-41f6-91bd-546ae4c4bac7/details',
+  duration: '16',
+  resourceId: '297ba62a-6755-4891-80ba-ec7ef8299d79',
+  resourceType: 'SITE',
+  event: 'BUILD_SUCCEEDED'
+}
+
+# Gatsby Cloud PR build
+{
+  body: '# [Gatsby Cloud](https://www.gatsbyjs.com) Build Report\n' +
+    '**bitwarden**\n' +
+    '\n' +
+    ':tada: Your build was successful! [See the Deploy preview here.](https://bitwarden-mastadonsocial.gtsb.io)\n' +
+    '\n' +
+    '## Build Details\n' +
+    '\n' +
+    '[View the build logs here.](https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/2335fee5-a636-491d-9bea-0f34059fd8f
+b/details)\n' +
+    '\n' +
+    ':clock1: Build time: **2m**\n',
+  buildId: '2335fee5-a636-491d-9bea-0f34059fd8fb',
+  workspaceName: 'Bitwarden',
+  siteName: 'bitwarden',
+  deployPreviewUrl: 'https://bitwarden-mastadonsocial.gtsb.io',
+  logsUrl: 'https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/2335fee5-a636-491d-9bea-0f34059fd8fb/details',
+  duration: '146',
+  resourceId: '297ba62a-6755-4891-80ba-ec7ef8299d79',
+  resourceType: 'SITE',
+  event: 'BUILD_SUCCEEDED'
+}
+
+# Gatsby Cloud preview build
+{
+  body: '# [Gatsby Cloud](https://www.gatsbyjs.com) Build Report\n' +
+    '**bitwarden**\n' +
+    '\n' +
+    ':tada: Your build was successful! [See the Deploy preview here.](https://bitwarden.gtsb.io)\n' +
+    '\n' +
+    '## Build Details\n' +
+    '\n' +
+    '[View the build logs here.](https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/e372b047-9cab-481e-ae0d-c25cf41f08a
+a/details)\n' +
+    '\n' +
+    ':clock1: Build time: **2s**\n',
+  buildId: 'e372b047-9cab-481e-ae0d-c25cf41f08aa',
+  workspaceName: 'Bitwarden',
+  siteName: 'bitwarden',
+  deployPreviewUrl: 'https://bitwarden.gtsb.io',
+  logsUrl: 'https://gatsbyjs.com/dashboard/9c130397-9bbe-47df-a2fe-92ce01bf73c7/sites/297ba62a-6755-4891-80ba-ec7ef8299d79/builds/e372b047-9cab-481e-ae0d-c25cf41f08aa/details',
+  duration: '2',
+  resourceId: '297ba62a-6755-4891-80ba-ec7ef8299d79',
+  resourceType: 'SITE',
+  event: 'PREVIEW_SUCCEEDED'
+}
+
+
+
+
+
+
+#  netlify
+{
+  id: '62196887a7068c00085d6130',
+  site_id: 'c3e7f6f5-8aff-499b-8c5d-3aa5ae53f196',
+  build_id: '62196887a7068c00085d612d',
+  state: 'ready',
+  name: 'bitwarden-website-contentful',
+  url: 'https://bitwarden.com',
+  ssl_url: 'https://bitwarden.com',
+  admin_url: 'https://app.netlify.com/sites/bitwarden-website-contentful',
+  deploy_url: 'http://deploy-preview-1074--bitwarden-website-contentful.netlify.app',
+  deploy_ssl_url: 'https://deploy-preview-1074--bitwarden-website-contentful.netlify.app',
+  created_at: '2022-02-25T23:38:47.899Z',
+  updated_at: '2022-02-25T23:51:23.421Z',
+  user_id: '60638f394b00ff39a55e440a',
+  error_message: null,
+  required: [],
+  required_functions: [],
+  commit_ref: '4859b57b00d08e5e933bf0853f51d8d741592017',
+  review_id: 1074,
+  branch: 'pdfs-yo',
+  commit_url: 'https://github.com/bitwarden/website/commit/4859b57b00d08e5e933bf0853f51d8d741592017',
+  skipped: null,
+  locked: null,
+  log_access_attributes: {
+    type: 'firebase',
+    url: 'https://netlify-builds4.firebaseio.com/builds/62196887a7068c00085d612d/log',
+    endpoint: 'https://netlify-builds4.firebaseio.com',
+    path: '/builds/62196887a7068c00085d612d/log',
+    token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ2IjowLCJpYXQiOjE2NDU4MzMwODcsImQiOnsidWlkIjoiIn19.QJZFiwmwuVxW3FEjYBANMj7x3v1l3JbuOb1bv5iRjho'
+  },
+  title: 'Content to PDF',
+  review_url: 'https://github.com/bitwarden/website/pull/1074',
+  published_at: null,
+  context: 'deploy-preview',
+  deploy_time: 752,
+  available_functions: [ [Object], [Object], [Object], [Object] ],
+  screenshot_url: null,
+  site_capabilities: {
+    title: 'Netlify Team Plus',
+    asset_acceleration: true,
+    form_processing: true,
+    cdn_propagation: 'partial',
+    domain_aliases: true,
+    secure_site: true,
+    prerendering: true,
+    proxying: true,
+    ssl: 'custom',
+    rate_cents: 0,
+    yearly_rate_cents: 0,
+    ipv6_domain: 'cdn.makerloop.com',
+    branch_deploy: true,
+    managed_dns: true,
+    geo_ip: true,
+    split_testing: true,
+    id: 'nf_team_pro',
+    cdn_tier: 'reg',
+    functions: [Object],
+    analytics: [Object],
+    identity: [Object],
+    forms: [Object]
+  },
+  committer: 'ljbw',
+  skipped_log: null,
+  manual_deploy: false,
+  file_tracking_optimization: true,
+  plugin_state: 'success',
+  has_edge_handlers: false,
+  links: {
+    permalink: 'https://62196887a7068c00085d6130--bitwarden-website-contentful.netlify.app',
+    alias: 'https://deploy-preview-1074--bitwarden-website-contentful.netlify.app',
+    branch: null
+  },
+  framework: 'gatsby',
+  entry_path: null,
+  views_count: null,
+  function_schedules: []
+}
+

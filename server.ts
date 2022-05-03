@@ -41,23 +41,40 @@ app.use(function (req, res, next) {
 app.post("/initiate-sync", (req, res) => {
   console.dir(req.body, { depth: null });
 
-  if (!req?.body?.context && !req?.body?.deployPreviewUrl) return res.sendStatus(200);
+  if (!req?.body?.context && !req?.body?.deployPreviewUrl)
+    return res.sendStatus(200);
 
   let host = "";
   let env: PrintEnv;
-  if (req.body.context === "production") {
+
+  // Netlify logic ... now extinct 4/28/2022
+  // if (req.body.context === "production") {
+  //   env = "production";
+  //   host = req.body.ssl_url;
+  // } else if (
+  //   req.body.context === "deploy-preview" ||
+  //   req.body.context === "branch-deploy"
+  // ) {
+  //   env = "preview";
+  //   host = req.body.deploy_ssl_url;
+  // }
+
+  // this means we only build on the master branch
+  if (req.body.deployPreviewUrl !== "https://bitwarden.gtsb.io") {
+    console.log("Not a production deploy.");
+    return res.sendStatus(200);
+  }
+
+  if (req.body.event === "BUILD_SUCCEEDED") {
+    host = "https://bitwarden.gtsb.io";
     env = "production";
-    host = req.body.ssl_url;
-  } else if (
-    req.body.context === "deploy-preview" ||
-    req.body.context === "branch-deploy"
-  ) {
+  } else if (req.body.event === "PREVIEW_SUCCEEDED") {
+    host = "https://preview-bitwarden.gtsb.io";
     env = "preview";
-    host = req.body.deploy_ssl_url;
-  } else if (req.body.deployPreviewUrl) {
-    env = "preview";
-    host = req.body.deployPreviewUrl;
-  } else return res.sendStatus(200);
+  } else {
+    console.log(`Unknown event type: ${req.body.event}`);
+    return res.sendStatus(200);
+  }
 
   generatePdfs(host, env);
 
@@ -81,7 +98,7 @@ app.get("/clear-cache", (req, res) => {
 
 const generatePdfs = (host: string, env: PrintEnv) => {
   const listingUrl = `${host}/print-file-list.json`;
-  console.log(`generatePdfs: ${listingUrl}`);
+  console.log(`generatePdfs: ${listingUrl} for env: ${env}`);
   axios
     .get(listingUrl)
     .then(async (response) => {
@@ -131,7 +148,7 @@ const generatePdfs = (host: string, env: PrintEnv) => {
 
 app.get("/get-pdf", async (req, res) => {
   const path = req.query.path;
-  const referrer = req.get("referrer") || '';
+  const referrer = req.get("referrer") || "";
   console.log(`getting: ${path} for ${referrer}`);
   if (!path || typeof path !== "string") return res.sendStatus(404);
 
