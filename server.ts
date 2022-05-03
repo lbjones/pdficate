@@ -148,13 +148,14 @@ const generatePdfs = (host: string, env: PrintEnv) => {
 
 app.get("/get-pdf", async (req, res) => {
   const path = req.query.path;
-  const referrer = req.get("referrer") || "";
+  const referrer = (req.get("referrer") || "").toLowerCase();
   console.log(`getting: ${path} for ${referrer}`);
   if (!path || typeof path !== "string") return res.sendStatus(404);
 
   let env: PrintEnv = "production";
   if (referrer.includes("localhost")) env = "localhost";
   else if (referrer.includes("preview")) env = "preview";
+  else if (referrer.includes("gtsb.io")) env = "preview";
 
   const file = `./pdfs/${env}${path.slice(0, -1)}.pdf`;
   if (!fs.existsSync(file)) return res.sendStatus(404);
