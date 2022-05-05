@@ -108,7 +108,7 @@ const generatePdfs = (host: string, env: PrintEnv) => {
         const filename = `./pdfs/${env}${node.path.slice(0, -1)}.pdf`;
         if (
           !fs.existsSync(filename) ||
-          fs.statSync(filename).birthtime < new Date(printNode.updatedAt)
+          fs.statSync(filename).mtime < new Date(printNode.updatedAt)
         ) {
           const printUrl = `${host}${printNode.path}print/`;
           console.log(`refreshing: ${printUrl}`);
@@ -130,10 +130,10 @@ const generatePdfs = (host: string, env: PrintEnv) => {
               format: "letter",
               path: filename,
               margin: {
-                top: "32px",
-                right: "32px",
-                bottom: "32px",
-                left: "32px",
+                top: "24px",
+                right: "24px",
+                bottom: "24px",
+                left: "24px",
               },
               scale: 1,
             });
