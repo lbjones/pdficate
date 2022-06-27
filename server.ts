@@ -165,40 +165,37 @@ app.get("/get-pdf", async (req, res) => {
 });
 
 app.get("/get-dynamic-pdf", async (req, res) => {
-  const path = req.query.path;
-  // console.dir(req, { depth: null });
+  const { path, env = "production" } = req.query;
+
   const referrer = (req.get("referrer") || "").toLowerCase();
   console.log(`getting: ${path} for ${referrer}`);
   if (!path || typeof path !== "string") return res.sendStatus(404);
+  const printUrl = `${referrer.slice(0, -1)}${path}`;
+  console.log(`pdficating: ${printUrl}`);
 
   const browser = await puppeteer.launch();
-  const printUrl = `${referrer.slice(0, -1)}${path}`;
-  console.log(`refreshing: ${printUrl}`);
-  const html = await axios
-    .get(printUrl)
-    .then((response) => response.data)
-    .catch(() => console.log("Error...could not retrieve that last one"));
-  if (html) {
-    // console.log(html);
-    const page = await browser.newPage();
-    await page.setContent(html);
-    const dir = path.substring(1, path.lastIndexOf("/"));
-    if (!fs.existsSync(dir)) {
-      console.log(`dir ${dir} doesnt exist, creating it...`);
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    await page.pdf({
-      format: "a4",
-      path: "sales-quote.pdf",
-      margin: {
-        top: "24px",
-        right: "24px",
-        bottom: "24px",
-        left: "24px",
-      },
-      scale: 1,
-    });
-  }
+  const page = await browser.newPage();
+  await page.goto(printUrl, {
+    waitUntil: "load",
+  });
 
-  return res.download("sales-quote.pdf");
+  const dir = `./pdfs/${env}/${path.split("/")[1]}/`;
+  if (!fs.existsSync(dir)) {
+    console.log(`dir ${dir} doesnt exist, creating it...`);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const filename = `${dir}${new Date().toISOString()}.pdf`;
+  await page.pdf({
+    format: "a4",
+    path: filename,
+    margin: {
+      top: "24px",
+      right: "24px",
+      bottom: "24px",
+      left: "24px",
+    },
+    scale: 1,
+  });
+
+  return res.download(filename);
 });
