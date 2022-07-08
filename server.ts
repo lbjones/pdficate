@@ -47,18 +47,6 @@ app.post("/initiate-sync", (req, res) => {
   let host = "";
   let env: PrintEnv;
 
-  // Netlify logic ... now extinct 4/28/2022
-  // if (req.body.context === "production") {
-  //   env = "production";
-  //   host = req.body.ssl_url;
-  // } else if (
-  //   req.body.context === "deploy-preview" ||
-  //   req.body.context === "branch-deploy"
-  // ) {
-  //   env = "preview";
-  //   host = req.body.deploy_ssl_url;
-  // }
-
   // this means we only build on the master branch
   if (req.body.deployPreviewUrl !== "https://bitwarden.gtsb.io") {
     console.log("Not a production deploy.");
@@ -66,7 +54,7 @@ app.post("/initiate-sync", (req, res) => {
   }
 
   if (req.body.event === "BUILD_SUCCEEDED") {
-    host = "https://bitwarden.gtsb.io";
+    host = "https://bitwarden.com";
     env = "production";
   } else if (req.body.event === "PREVIEW_SUCCEEDED") {
     host = "https://preview-bitwarden.gtsb.io";
@@ -97,7 +85,7 @@ app.get("/clear-cache", (req, res) => {
 });
 
 const generatePdfs = (host: string, env: PrintEnv) => {
-  const listingUrl = `${host}/print-file-list.json`;
+  const listingUrl = `${host}/print-list.json`;
   console.log(`generatePdfs: ${listingUrl} for env: ${env}`);
   axios
     .get(listingUrl)
@@ -112,38 +100,39 @@ const generatePdfs = (host: string, env: PrintEnv) => {
         ) {
           const printUrl = `${host}${printNode.path}print/`;
           console.log(`refreshing: ${printUrl}`);
-          const html = await axios
-            .get(printUrl)
-            .then((response) => response.data)
-            .catch(() =>
-              console.log("Error...could not retrieve that last one")
-            );
-          if (html) {
-            const page = await browser.newPage();
-            await page.setContent(html);
-            const dir = filename.substring(0, filename.lastIndexOf("/"));
-            if (!fs.existsSync(dir)) {
-              console.log(`dir ${dir} doesnt exist, creating it...`);
-              fs.mkdirSync(dir, { recursive: true });
-            }
-            await page.pdf({
-              format: "a4",
-              path: filename,
-              margin: {
-                top: "24px",
-                right: "24px",
-                bottom: "24px",
-                left: "24px",
-              },
-              scale: 1,
+          const page = await browser.newPage();
+
+          await page
+            .goto(printUrl, {
+              waitUntil: "networkidle2",
+            })
+            .then(async () => {
+              const dir = filename.substring(0, filename.lastIndexOf("/"));
+              if (!fs.existsSync(dir)) {
+                console.log(`dir ${dir} doesnt exist, creating it...`);
+                fs.mkdirSync(dir, { recursive: true });
+              }
+              await page.pdf({
+                format: "a4",
+                path: filename,
+                margin: {
+                  top: "24px",
+                  right: "24px",
+                  bottom: "24px",
+                  left: "24px",
+                },
+                scale: 1,
+              });
+            })
+            .catch((e) => {
+              console.log(e, "Error...could not retrieve that last one");
             });
-          }
         }
       }
       console.log("...and done");
       await browser.close();
     })
-    .catch(() => console.log("Error...could not retrieve listing file"));
+    .catch((e) => console.log(e, "Error...could not retrieve listing file"));
 };
 
 app.get("/get-pdf", async (req, res) => {
@@ -170,13 +159,18 @@ app.get("/get-dynamic-pdf", async (req, res) => {
   const referrer = (req.get("referrer") || "").toLowerCase();
   console.log(`getting: ${path} for ${referrer}`);
   if (!path || typeof path !== "string") return res.sendStatus(404);
+
+  // make sure we are not pdf-icating just anything
+  if (!path.includes("/sales-quote/") || !referrer.includes("bitwarden.com"))
+    return res.sendStatus(404);
+
   const printUrl = `${referrer.slice(0, -1)}${path}`;
   console.log(`pdficating: ${printUrl}`);
 
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto(printUrl, {
-    waitUntil: "load",
+    waitUntil: "networkidle2",
   });
 
   const dir = `./pdfs/${env}/${path.split("/")[1]}/`;
