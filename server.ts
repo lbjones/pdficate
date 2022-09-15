@@ -87,6 +87,10 @@ app.get("/clear-cache", (req, res) => {
 const generatePdfs = (host: string, env: PrintEnv) => {
   const listingUrl = `${host}/print-list.json`;
   console.log(`generatePdfs: ${listingUrl} for env: ${env}`);
+  if (env !== "production") {
+    console.log("skipping non prod for now.");
+    return;
+  }
   axios
     .get(listingUrl)
     .then(async (response) => {
