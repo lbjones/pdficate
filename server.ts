@@ -84,13 +84,23 @@ app.get("/clear-cache", (req, res) => {
   res.sendStatus(200);
 });
 
+app.get("/man-sync", (req, res) => {
+  const { host, env, key } = req.query;
+
+  if (process.env.KEY !== key || !PrintEnvs.includes(env as PrintEnv) || !host)
+    return res.sendStatus(404);
+
+  console.log(`manually syncing pdfs:`, req.query);
+
+  generatePdfs(host as string, env as PrintEnv);
+
+  res.sendStatus(200);
+});
+
 const generatePdfs = (host: string, env: PrintEnv) => {
   const listingUrl = `${host}/print-list.json`;
   console.log(`generatePdfs: ${listingUrl} for env: ${env}`);
-  if (env !== "production") {
-    console.log("skipping non prod for now.");
-    return;
-  }
+
   axios
     .get(listingUrl)
     .then(async (response) => {
