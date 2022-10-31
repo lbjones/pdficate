@@ -48,7 +48,10 @@ app.post("/initiate-sync", (req, res) => {
   let env: PrintEnv;
 
   // this means we only build on the master branch
-  if (req.body.deployPreviewUrl !== "https://bitwarden.gtsb.io") {
+  if (
+    req.body.deployPreviewUrl !== "https://bitwarden.gatsbyjs.io" &&
+    req.body.resourceId !== "297ba62a-6755-4891-80ba-ec7ef8299d79"
+  ) {
     console.log("Not a production deploy.");
     return res.sendStatus(200);
   }
@@ -57,7 +60,7 @@ app.post("/initiate-sync", (req, res) => {
     host = "https://bitwarden.com";
     env = "production";
   } else if (req.body.event === "PREVIEW_SUCCEEDED") {
-    host = "https://preview-bitwarden.gtsb.io";
+    host = "https://preview-bitwarden.gatsbyjs.io";
     env = "preview";
   } else {
     console.log(`Unknown event type: ${req.body.event}`);
