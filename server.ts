@@ -3,6 +3,9 @@ import express from "express";
 import fs from "fs";
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
+import cors from "cors";
+
+import { getCompiledHTML, generateImage } from "./og-image";
 
 dotenv.config();
 
@@ -210,3 +213,33 @@ app.get("/get-dynamic-pdf", async (req, res) => {
 
   return res.download(filename);
 });
+
+app.get(
+  "/og-image",
+  cors({
+    methods: ["GET"],
+    origin: ["https://app.contentful.com", "http://localhost:8087"],
+  }),
+  async (req, res) => {
+    try {
+      console.log("ahhhh");
+      const compiledHTML = getCompiledHTML(req.query);
+
+      console.log(compiledHTML);
+      const image = await generateImage({
+        width: Number(req.query.width) || 1200,
+        height: Number(req.query.height) || 600,
+        content: compiledHTML,
+      });
+
+      res.writeHead(200, {
+        "Content-Type": "image/png",
+        "Cache-Control": `public, immutable, no-transform, s-max-age=2592000, max-age=2592000`,
+      });
+      res.end(image);
+    } catch (e) {
+      console.log(e);
+      res.status(500).send("Internal Server Error!");
+    }
+  }
+);
