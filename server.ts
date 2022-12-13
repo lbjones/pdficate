@@ -3,9 +3,6 @@ import express from "express";
 import fs from "fs";
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
-import cors from "cors";
-
-import { getCompiledHTML, generateImage } from "./og-image";
 
 dotenv.config();
 
@@ -174,14 +171,17 @@ app.get("/get-pdf", async (req, res) => {
 });
 
 app.get("/get-dynamic-pdf", async (req, res) => {
-  const { path, env = "production" } = req.query;
+  const path = (req.query.path as string) || "";
+  const env = (req.query.env as string) || "production";
+  const referrer = req.get("referrer") || "";
 
-  const referrer = (req.get("referrer") || "").toLowerCase();
   console.log(`getting: ${path} for ${referrer}`);
-  if (!path || typeof path !== "string") return res.sendStatus(404);
 
   // make sure we are not pdf-icating just anything
-  if (!path.includes("/sales-quote/") || !referrer.includes("bitwarden.com"))
+  if (
+    !(path as string).includes("/sales-quote/") ||
+    !referrer.includes("https://bitwarden.com")
+  )
     return res.sendStatus(404);
 
   const printUrl = `${referrer.slice(0, -1)}${path}`;
@@ -211,35 +211,33 @@ app.get("/get-dynamic-pdf", async (req, res) => {
     scale: 1,
   });
 
+  browser.close();
   return res.download(filename);
 });
 
-app.get(
-  "/og-image",
-  cors({
-    methods: ["GET"],
-    origin: ["https://app.contentful.com", "http://localhost:8087"],
-  }),
-  async (req, res) => {
-    try {
-      console.log("ahhhh");
-      const compiledHTML = getCompiledHTML(req.query);
+app.get("/og-image", async (req, res) => {
+  const referrer = req.get("referrer") || "";
+  const path = (req.query.path as string) || "";
 
-      console.log(compiledHTML);
-      const image = await generateImage({
-        width: Number(req.query.width) || 1200,
-        height: Number(req.query.height) || 600,
-        content: compiledHTML,
-      });
+  console.log(`og-image: getting ${path} for ${referrer}`);
 
-      res.writeHead(200, {
-        "Content-Type": "image/png",
-        "Cache-Control": `public, immutable, no-transform, s-max-age=2592000, max-age=2592000`,
-      });
-      res.end(image);
-    } catch (e) {
-      console.log(e);
-      res.status(500).send("Internal Server Error!");
-    }
-  }
-);
+  // make sure we are not pdf-icating just anything
+  if (!path.includes("/og-image/") || !referrer?.includes("https://bitwarden"))
+    return res.sendStatus(404);
+
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.goto(`${path}&isPrint=true`, {
+    waitUntil: "networkidle2",
+  });
+  const element = await page.$("#main-img");
+  const image = await element?.screenshot({ type: "png" });
+  browser.close();
+
+  res.writeHead(200, {
+    "Content-Type": "image/png",
+    "Cache-Control": `public, max-age=0, must-revalidate`,
+  });
+
+  return res.end(image);
+});
