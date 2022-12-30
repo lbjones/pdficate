@@ -130,13 +130,13 @@ const generatePdfs = (host: string, env: PrintEnv) => {
                 fs.mkdirSync(dir, { recursive: true });
               }
               await page.pdf({
-                format: "a4",
+                format: "letter",
                 path: filename,
                 margin: {
-                  top: "24px",
-                  right: "24px",
-                  bottom: "24px",
-                  left: "24px",
+                  top: "16pt",
+                  right: "16pt",
+                  bottom: "16pt",
+                  left: "16pt",
                 },
                 scale: 1,
               });
