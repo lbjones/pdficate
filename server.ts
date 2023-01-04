@@ -1,6 +1,7 @@
 import axios from "axios";
 import express from "express";
 import fs from "fs";
+import path from "path";
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
 
@@ -24,7 +25,7 @@ const PrintEnvs = ["production", "preview", "localhost"] as const;
 type PrintEnv = typeof PrintEnvs[number];
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`The PDFicator is listening on port ${port}`);
 });
 
 app.use(express.json({ limit: "2MB" }));
@@ -72,21 +73,6 @@ app.post("/initiate-sync", (req, res) => {
   res.sendStatus(200);
 });
 
-app.get("/clear-cache", (req, res) => {
-  const { host, env, key } = req.query;
-
-  if (process.env.KEY !== key || !PrintEnvs.includes(env as PrintEnv) || !host)
-    return res.sendStatus(404);
-
-  console.log(`clearing cache:`, req.query);
-
-  fs.rmSync(`./pdfs/${env}`, { recursive: true, force: true });
-
-  generatePdfs(host as string, env as PrintEnv);
-
-  res.sendStatus(200);
-});
-
 app.get("/man-sync", (req, res) => {
   const { host, env, key } = req.query;
 
@@ -100,134 +86,136 @@ app.get("/man-sync", (req, res) => {
   res.sendStatus(200);
 });
 
-const generatePdfs = (host: string, env: PrintEnv) => {
+app.get("/clear-cache", (req, res) => {
+  const { host, env, key } = req.query;
+
+  if (process.env.KEY !== key || !PrintEnvs.includes(env as PrintEnv) || !host)
+    return res.sendStatus(404);
+
+  console.log(`clearing cache:`, req.query);
+
+  generatePdfs(host as string, env as PrintEnv, true);
+
+  res.sendStatus(200);
+});
+
+const generatePdfs = (host: string, env: PrintEnv, doAll = false) => {
   const listingUrl = `${host}/print-list.json`;
   console.log(`generatePdfs: ${listingUrl} for env: ${env}`);
 
   axios
     .get(listingUrl)
     .then(async (response) => {
-      const browser = await puppeteer.launch();
       for (const node of response.data) {
         const printNode = node as PrintNode;
         const filename = `./pdfs/${env}${node.path.slice(0, -1)}.pdf`;
         if (
+          doAll ||
           !fs.existsSync(filename) ||
           fs.statSync(filename).mtime < new Date(printNode.updatedAt)
         ) {
           const printUrl = `${host}${printNode.path}print/`;
           console.log(`refreshing: ${printUrl}`);
-          const page = await browser.newPage();
 
-          await page
-            .goto(printUrl, {
-              waitUntil: "networkidle2",
-            })
-            .then(async () => {
-              const dir = filename.substring(0, filename.lastIndexOf("/"));
-              if (!fs.existsSync(dir)) {
-                console.log(`dir ${dir} doesnt exist, creating it...`);
-                fs.mkdirSync(dir, { recursive: true });
-              }
-              await page.pdf({
-                format: "a4",
-                path: filename,
-                margin: {
-                  top: "24px",
-                  right: "24px",
-                  bottom: "24px",
-                  left: "24px",
-                },
-                scale: 1,
-              });
-            })
-            .catch((e) => {
-              console.log(e, "Error...could not retrieve that last one");
-            });
+          await pdfication(printUrl, filename);
         }
       }
       console.log("...and done");
-      await browser.close();
     })
     .catch((e) => console.log(e, "Error...could not retrieve listing file"));
 };
 
 app.get("/get-pdf", async (req, res) => {
-  const path = req.query.path;
+  const route = req.query.path;
   const referrer = (req.get("referrer") || "").toLowerCase();
-  console.log(`getting: ${path} for ${referrer}`);
-  if (!path || typeof path !== "string") return res.sendStatus(404);
+  console.log(`getting: ${route} for ${referrer}`);
+  if (!route || typeof route !== "string") return res.sendStatus(404);
 
   let env: PrintEnv = "production";
-  if (referrer.includes("localhost")) env = "localhost";
+  if (referrer.includes("localhost") || process.env.ENV === "dev")
+    env = "localhost";
   else if (referrer.includes("preview")) env = "preview";
   else if (referrer.includes("gtsb.io")) env = "preview";
 
-  const file = `./pdfs/${env}${path.slice(0, -1)}.pdf`;
+  const file = `./pdfs/${env}${route.slice(0, -1)}.pdf`;
+  if (env === "localhost")
+    await pdfication("http://localhost:8000" + route + "print/", file);
   if (!fs.existsSync(file)) return res.sendStatus(404);
 
-  console.log(`got: ${file}`);
   return res.download(file);
 });
 
 app.get("/get-dynamic-pdf", async (req, res) => {
-  const path = (req.query.path as string) || "";
+  const route = (req.query.path as string) || "";
   const env = (req.query.env as string) || "production";
   const referrer = req.get("referrer") || "";
 
-  console.log(`getting: ${path} for ${referrer}`);
+  console.log(`getting: ${route} for ${referrer}`);
 
   // make sure we are not pdf-icating just anything
   if (
-    !(path as string).includes("/sales-quote/") ||
+    !(route as string).includes("/sales-quote/") ||
     !referrer.includes("https://bitwarden.com")
   )
     return res.sendStatus(404);
 
-  const printUrl = `${referrer.slice(0, -1)}${path}`;
-  console.log(`pdficating: ${printUrl}`);
+  return res.download(
+    await pdfication(
+      `${referrer.slice(0, -1)}${route}`,
+      `./pdfs/${env}/${route.split("/")[1]}/${new Date().toISOString()}.pdf`
+    )
+  );
+});
 
+const pdfication = async (url: string, filename: string) => {
+  console.log(`pdficating: ${url}`);
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.goto(printUrl, {
+  await page.goto(url, {
     waitUntil: "networkidle2",
   });
-
-  const dir = `./pdfs/${env}/${path.split("/")[1]}/`;
+  const dir = path.dirname(filename);
   if (!fs.existsSync(dir)) {
     console.log(`dir ${dir} doesnt exist, creating it...`);
     fs.mkdirSync(dir, { recursive: true });
   }
-  const filename = `${dir}${new Date().toISOString()}.pdf`;
   await page.pdf({
-    format: "a4",
+    format: "letter",
     path: filename,
     margin: {
-      top: "24px",
-      right: "24px",
-      bottom: "24px",
-      left: "24px",
+      top: "0px",
+      right: "0px",
+      bottom: "0px",
+      left: "0px",
     },
+    timeout: 30000,
+    omitBackground: false,
+    printBackground: true,
     scale: 1,
   });
 
-  browser.close();
-  return res.download(filename);
-});
+  await browser.close();
+
+  const realpath = fs.realpathSync(filename);
+
+  console.log(`pdficated: ${realpath}`);
+
+  return realpath;
+};
 
 app.get("/og-image", async (req, res) => {
   const referrer = req.get("referrer") || "";
-  const path = (req.query.path as string) || "";
+  const route = (req.query.route as string) || "";
 
-  console.log(`og-image: getting ${path} for ${referrer}`);
+  console.log(`og-image: getting ${route} for ${referrer}`);
 
   // make sure we are not pdf-icating just anything
-  if (!path.includes("/og-image/") || !referrer?.includes("https://bitwarden"))
+  if (!route.includes("/og-image/") || !referrer?.includes("https://bitwarden"))
     return res.sendStatus(404);
 
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.goto(`${path}&isPrint=true`, {
+  await page.goto(`${route}&isPrint=true`, {
     waitUntil: "networkidle2",
   });
   const element = await page.$("#main-img");
