@@ -114,7 +114,7 @@ const generatePdfs = (host: string, env: PrintEnv, doAll = false) => {
           !fs.existsSync(filename) ||
           fs.statSync(filename).mtime < new Date(printNode.updatedAt)
         ) {
-          const printUrl = `${host}${printNode.path}print/`;
+          const printUrl = `${host}${printNode.path}?print`;
           console.log(`refreshing: ${printUrl}`);
 
           await pdfication(printUrl, filename);
@@ -139,7 +139,7 @@ app.get("/get-pdf", async (req, res) => {
 
   const file = `./pdfs/${env}${route.slice(0, -1)}.pdf`;
   if (env === "localhost")
-    await pdfication("http://localhost:8000" + route + "print/", file);
+    await pdfication("http://localhost:8000" + route + "?print", file);
   if (!fs.existsSync(file)) return res.sendStatus(404);
 
   return res.download(file);
