@@ -147,21 +147,25 @@ app.get("/get-pdf", async (req, res) => {
 
 app.get("/get-dynamic-pdf", async (req, res) => {
   const route = (req.query.path as string) || "";
-  const env = (req.query.env as string) || "production";
   const referrer = req.get("referrer") || "";
+
+  let env = (req.query.env as string) || "production";
+  if (referrer.includes("localhost") || process.env.ENV === "dev")
+    env = "localhost";
 
   console.log(`getting: ${route} for ${referrer}`);
 
   // make sure we are not pdf-icating just anything
   if (
-    !(route as string).includes("/sales-quote/") ||
-    !referrer.includes("https://bitwarden.com")
+    env !== "localhost" &&
+    (!(route as string).includes("/sales-quote/") ||
+      !referrer.includes("https://bitwarden.com"))
   )
     return res.sendStatus(404);
 
   return res.download(
     await pdfication(
-      `${referrer.slice(0, -1)}${route}`,
+      `${referrer.slice(0, -1)}${route}&print`,
       `./pdfs/${env}/${route.split("/")[1]}/${new Date().toISOString()}.pdf`
     )
   );
