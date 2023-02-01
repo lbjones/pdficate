@@ -149,24 +149,22 @@ app.get("/get-dynamic-pdf", async (req, res) => {
   const route = (req.query.path as string) || "";
   const referrer = req.get("referrer") || "";
 
-  let env = (req.query.env as string) || "production";
-  if (referrer.includes("localhost") || process.env.ENV === "dev")
-    env = "localhost";
-
   console.log(`getting: ${route} for ${referrer}`);
 
   // make sure we are not pdf-icating just anything
   if (
-    env !== "localhost" &&
-    (!(route as string).includes("/sales-quote/") ||
-      !referrer.includes("https://bitwarden.com"))
+    process.env.ENV === "production" &&
+    (!route.includes("/sales-quote/") ||
+      !referrer?.includes("https://bitwarden.com"))
   )
     return res.sendStatus(404);
 
   return res.download(
     await pdfication(
       `${referrer.slice(0, -1)}${route}&print`,
-      `./pdfs/${env}/${route.split("/")[1]}/${new Date().toISOString()}.pdf`
+      `./pdfs/${process.env.ENV}/${
+        route.split("/")[1]
+      }/${new Date().toISOString()}.pdf`
     )
   );
 });
@@ -209,17 +207,20 @@ const pdfication = async (url: string, filename: string) => {
 
 app.get("/og-image", async (req, res) => {
   const referrer = req.get("referrer") || "";
-  const route = (req.query.route as string) || "";
+  const route = (req.query.path as string) || "";
 
   console.log(`og-image: getting ${route} for ${referrer}`);
 
   // make sure we are not pdf-icating just anything
-  if (!route.includes("/og-image/") || !referrer?.includes("https://bitwarden"))
+  if (
+    process.env.ENV === "production" &&
+    (!route.includes("og/") || !referrer?.includes("https://bitwarden.com"))
+  )
     return res.sendStatus(404);
 
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.goto(`${route}&isPrint=true`, {
+  await page.goto(`${route}&print=true`, {
     waitUntil: "networkidle2",
   });
   const element = await page.$("#main-img");
