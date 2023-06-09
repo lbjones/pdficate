@@ -174,7 +174,7 @@ const pdfication = async (url: string, filename: string) => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto(url, {
-    waitUntil: "networkidle2",
+    waitUntil: "networkidle0",
   });
   const dir = path.dirname(filename);
   if (!fs.existsSync(dir)) {
