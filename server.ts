@@ -171,10 +171,10 @@ app.get("/get-dynamic-pdf", async (req, res) => {
 
 const pdfication = async (url: string, filename: string) => {
   console.log(`pdficating: ${url}`);
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({headless: 'new'});
   const page = await browser.newPage();
   await page.goto(url, {
-    waitUntil: "networkidle2",
+    waitUntil: "networkidle0",
   });
   const dir = path.dirname(filename);
   if (!fs.existsSync(dir)) {
@@ -218,10 +218,10 @@ app.get("/og-image", async (req, res) => {
   )
     return res.sendStatus(404);
 
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({headless: 'new'});
   const page = await browser.newPage();
   await page.goto(`${route}&print=true`, {
-    waitUntil: "networkidle2",
+    waitUntil: "networkidle0",
   });
   const element = await page.$("#main-img");
   const image = await element?.screenshot({ type: "png" });
