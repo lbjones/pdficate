@@ -10,6 +10,8 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
+const doNotRenderSelector = `script, .osano-cm-dialog, [data-testid="preview-status-indicator"]`
+
 const logCopy = console.log.bind(console);
 console.log = function (data) {
   var date = "[" + new Date().toUTCString() + "] ";
@@ -176,6 +178,11 @@ const pdfication = async (url: string, filename: string) => {
   await page.goto(url, {
     waitUntil: "networkidle0",
   });
+  
+  await page.evaluate((sel) => {
+    document.querySelectorAll(sel).forEach(el => el.remove())
+  }, doNotRenderSelector)
+
   const dir = path.dirname(filename);
   if (!fs.existsSync(dir)) {
     console.log(`dir ${dir} doesnt exist, creating it...`);
@@ -223,6 +230,11 @@ app.get("/og-image", async (req, res) => {
   await page.goto(`${route}&print=true`, {
     waitUntil: "networkidle0",
   });
+
+  await page.evaluate((sel) => {
+    document.querySelectorAll(sel).forEach(el => el.remove())
+  }, doNotRenderSelector)
+  
   const element = await page.$("#main-img");
   const image = await element?.screenshot({ type: "png" });
   browser.close();
