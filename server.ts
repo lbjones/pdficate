@@ -21,6 +21,7 @@ console.log = function (data) {
 interface PrintNode {
   path: string;
   updatedAt: string;
+  landscape?: boolean;
 }
 
 const PrintEnvs = ["production", "preview", "localhost"] as const;
@@ -119,7 +120,7 @@ const generatePdfs = (host: string, env: PrintEnv, doAll = false) => {
           const printUrl = `${host}${printNode.path}?print`;
           console.log(`refreshing: ${printUrl}`);
 
-          await pdfication(printUrl, filename);
+          await pdfication(printUrl, filename, printNode.landscape === true);
         }
       }
       console.log("...and done");
@@ -171,7 +172,7 @@ app.get("/get-dynamic-pdf", async (req, res) => {
   );
 });
 
-const pdfication = async (url: string, filename: string) => {
+const pdfication = async (url: string, filename: string, landscape = false) => {
   console.log(`pdficating: ${url}`);
   const browser = await puppeteer.launch({headless: 'new'});
   const page = await browser.newPage();
@@ -201,6 +202,7 @@ const pdfication = async (url: string, filename: string) => {
     omitBackground: false,
     printBackground: true,
     scale: 1,
+    landscape
   });
 
   await browser.close();
