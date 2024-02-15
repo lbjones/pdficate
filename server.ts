@@ -176,7 +176,7 @@ const pdfication = async (url: string, filename: string) => {
   const browser = await puppeteer.launch({headless: 'new'});
   const page = await browser.newPage();
   await page.goto(url, {
-    waitUntil: "networkidle0",
+    waitUntil: "networkidle2",
   });
   
   await page.evaluate((sel) => {
@@ -228,7 +228,7 @@ app.get("/og-image", async (req, res) => {
   const browser = await puppeteer.launch({headless: 'new'});
   const page = await browser.newPage();
   await page.goto(`${route}&print=true`, {
-    waitUntil: "networkidle0",
+    waitUntil: "networkidle2",
   });
 
   await page.evaluate((sel) => {
